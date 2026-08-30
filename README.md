@@ -1,4 +1,4 @@
-# Mini Dock Toggle
+# MacWin
 
 一款轻量级 macOS 菜单栏工具，为 Dock 应用增加“单击呼出／再次单击最小化”功能。
 
@@ -15,10 +15,9 @@
 
 ```zsh
 ./src/toggle-dock-demo/scripts/build-app.sh
-open "outputs/UniversalDockToggle-v1.6.app"
 ```
 
-首次运行后，打开“系统设置 → 隐私与安全性 → 辅助功能”，添加并启用 `UniversalDockToggle-v1.6.app`，然后重新启动应用。
+构建脚本会自动安装到 `/Applications/MacWin.app` 并启动。首次运行会弹出授权引导；也可在“系统设置 → 隐私与安全性 → 辅助功能”中启用 MacWin。
 
 ## 注意事项
 
