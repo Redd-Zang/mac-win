@@ -17,6 +17,7 @@ private enum WindowToggleMode: String {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var awaitingAccessibilityAuthorization = false
+    private var authorizationWatcher: Timer?
     private lazy var dockClickTracker = DockClickTracker { application, wasFrontmost in
         ManagedWindows.toggle(application, wasFrontmost: wasFrontmost, mode: .selected)
     }
@@ -25,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusItem.button?.toolTip = "MacWin：\(mode.title)"
     } onOpenAccessibilitySettings: {
         self.awaitingAccessibilityAuthorization = true
+        self.startAuthorizationWatcher()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -37,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             alert.addButton(withTitle: "稍后设置")
             if alert.runModal() == .alertFirstButtonReturn {
                 awaitingAccessibilityAuthorization = true
+                startAuthorizationWatcher()
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
             }
         }
@@ -47,9 +50,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dockClickTracker.stop()
     }
 
-    func applicationDidBecomeActive(_ notification: Notification) {
-        guard awaitingAccessibilityAuthorization, AXIsProcessTrusted() else { return }
+    private func startAuthorizationWatcher() {
+        authorizationWatcher?.invalidate()
+        authorizationWatcher = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.awaitingAccessibilityAuthorization, AXIsProcessTrusted() else { return }
+                self.authorizationWatcher?.invalidate()
+                self.authorizationWatcher = nil
+                self.showAuthorizationCompletedAlert()
+            }
+        }
+    }
+
+    private func showAuthorizationCompletedAlert() {
         awaitingAccessibilityAuthorization = false
+        NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = "辅助功能授权已完成"
         alert.informativeText = "MacWin 需要重启后才能开始监听 Dock 点击。"
