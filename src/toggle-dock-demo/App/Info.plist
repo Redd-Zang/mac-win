@@ -5,13 +5,13 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>ToggleDockDemo</string>
+    <string>MacWin</string>
     <key>CFBundleIdentifier</key>
-	<string>com.example.universaldocktogglev16</string>
+	<string>com.reddzang.macwin</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-	<string>Universal Dock Toggle v1.6</string>
+	<string>MacWin</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
