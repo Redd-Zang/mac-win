@@ -100,7 +100,7 @@ private final class SettingsWindowController: NSObject {
     init(onModeChange: @escaping (WindowToggleMode) -> Void, onOpenAccessibilitySettings: @escaping () -> Void) {
         self.onModeChange = onModeChange
         self.onOpenAccessibilitySettings = onOpenAccessibilitySettings
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 390), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 445), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         modeControl = NSSegmentedControl(labels: ["全部窗口", "当前窗口"], trackingMode: .selectOne, target: nil, action: nil)
         super.init()
         window.title = "MacWin 设置"
@@ -117,10 +117,11 @@ private final class SettingsWindowController: NSObject {
         let permissionTitle = NSTextField(labelWithString: "系统权限")
         permissionTitle.font = .systemFont(ofSize: 17, weight: .semibold)
         let permissionButton = NSButton(title: "打开辅助功能设置", target: self, action: #selector(openAccessibilitySettings))
+        let restartButton = NSButton(title: "授权完成后重启 MacWin", target: self, action: #selector(restartAfterAuthorization))
         authorizationStatus.textColor = .secondaryLabelColor
         let hint = NSTextField(wrappingLabelWithString: "窗口模式和开机启动设置会立即保存。")
         hint.textColor = .tertiaryLabelColor
-        let stack = NSStackView(views: [title, modeControl, description, permissionTitle, authorizationStatus, permissionButton, launchAtLogin, hint])
+        let stack = NSStackView(views: [title, modeControl, description, permissionTitle, authorizationStatus, permissionButton, restartButton, launchAtLogin, hint])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 16
@@ -150,6 +151,19 @@ private final class SettingsWindowController: NSObject {
     @objc private func openAccessibilitySettings() {
         onOpenAccessibilitySettings()
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+    }
+
+    @objc private func restartAfterAuthorization() {
+        guard AXIsProcessTrusted() else {
+            let alert = NSAlert()
+            alert.messageText = "尚未获得辅助功能权限"
+            alert.informativeText = "请先在系统设置中启用 MacWin，然后再回来重启。"
+            alert.addButton(withTitle: "好")
+            alert.runModal()
+            return
+        }
+        NSWorkspace.shared.open(Bundle.main.bundleURL)
+        NSApp.terminate(nil)
     }
 
     @objc private func launchAtLoginChanged() {
