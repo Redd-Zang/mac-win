@@ -16,12 +16,15 @@ private enum WindowToggleMode: String {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
+    private var awaitingAccessibilityAuthorization = false
     private lazy var dockClickTracker = DockClickTracker { application, wasFrontmost in
         ManagedWindows.toggle(application, wasFrontmost: wasFrontmost, mode: .selected)
     }
     private lazy var settingsController = SettingsWindowController { mode in
         UserDefaults.standard.set(mode.rawValue, forKey: "windowToggleMode")
         self.statusItem.button?.toolTip = "MacWin：\(mode.title)"
+    } onOpenAccessibilitySettings: {
+        self.awaitingAccessibilityAuthorization = true
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -33,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             alert.addButton(withTitle: "打开系统设置")
             alert.addButton(withTitle: "稍后设置")
             if alert.runModal() == .alertFirstButtonReturn {
+                awaitingAccessibilityAuthorization = true
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
             }
         }
@@ -43,12 +47,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dockClickTracker.stop()
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        guard awaitingAccessibilityAuthorization, AXIsProcessTrusted() else { return }
+        awaitingAccessibilityAuthorization = false
+        let alert = NSAlert()
+        alert.messageText = "辅助功能授权已完成"
+        alert.informativeText = "MacWin 需要重启后才能开始监听 Dock 点击。"
+        alert.addButton(withTitle: "立即重启")
+        alert.addButton(withTitle: "稍后手动重启")
+        if alert.runModal() == .alertFirstButtonReturn {
+            restart()
+        }
+    }
+
     @objc private func quit() {
         NSApp.terminate(nil)
     }
 
     @objc private func showSettings() {
         settingsController.show()
+    }
+
+    private func restart() {
+        NSWorkspace.shared.open(Bundle.main.bundleURL)
+        NSApp.terminate(nil)
     }
 
     private func configureStatusItem() {
@@ -73,9 +95,11 @@ private final class SettingsWindowController: NSObject {
     private let authorizationStatus = NSTextField(labelWithString: "")
     private let launchAtLogin = NSButton(checkboxWithTitle: "登录时自动启动 MacWin", target: nil, action: nil)
     private let onModeChange: (WindowToggleMode) -> Void
+    private let onOpenAccessibilitySettings: () -> Void
 
-    init(onModeChange: @escaping (WindowToggleMode) -> Void) {
+    init(onModeChange: @escaping (WindowToggleMode) -> Void, onOpenAccessibilitySettings: @escaping () -> Void) {
         self.onModeChange = onModeChange
+        self.onOpenAccessibilitySettings = onOpenAccessibilitySettings
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 390), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         modeControl = NSSegmentedControl(labels: ["全部窗口", "当前窗口"], trackingMode: .selectOne, target: nil, action: nil)
         super.init()
@@ -124,6 +148,7 @@ private final class SettingsWindowController: NSObject {
     }
 
     @objc private func openAccessibilitySettings() {
+        onOpenAccessibilitySettings()
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 
