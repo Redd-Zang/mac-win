@@ -14,9 +14,10 @@ if [[ -e "$app_dir" ]]; then
   exit 1
 fi
 
-mkdir -p "$app_dir/Contents/MacOS"
+mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 cp "$package_dir/.build/release/ToggleDockDemo" "$app_dir/Contents/MacOS/MacWin"
 cp "$package_dir/App/Info.plist" "$app_dir/Contents/Info.plist"
+cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns "$app_dir/Contents/Resources/MacWin.icns"
 xattr -cr "$app_dir"
 codesign --force --deep --sign - "$app_dir"
 xattr -cr "$app_dir"
