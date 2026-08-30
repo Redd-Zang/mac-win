@@ -1,31 +1,37 @@
-# Wins 功能复刻可行性评估
+# Mini Dock Toggle
 
-## 目标
+一款轻量级 macOS 菜单栏工具，为 Dock 应用增加“单击呼出／再次单击最小化”功能。
 
-基于用户提供的产品说明、系统图示及本机 `/Applications/Wins.app` 的只读检查，评估以独立代码实现同类 Mac 窗口管理产品主要功能的可行性、技术路线、权限边界与风险。
+## 功能
 
-## 范围与边界
+- 单击 Dock 中的应用图标：呼出并置前窗口。
+- 应用已经在前台时再次单击：最小化窗口。
+- 支持微信、浏览器、访达等允许辅助功能控制的应用。
+- 菜单栏“设置…”可选择“全部窗口”或“当前窗口”模式。
 
-- 包含：功能清单、静态技术栈辨识、macOS API/权限可行性评估、MVP 建议与风险说明。
-- 不包含：复制原应用代码、素材、界面资产或商业标识；绕过许可证、签名、加密、反调试或其他保护措施；分发原应用或其衍生物。
+## 安装与运行
 
-## 输入
+当前仓库提供源码，适合个人使用和测试。构建需要 macOS 13 或更高版本，以及 Xcode Command Line Tools。
 
-- 用户提供的产品功能说明与 6 张图示（副本位于 `inputs/`）。
-- 用户指定的本机应用：`/Applications/Wins.app`（只读分析，未复制）。
+```zsh
+./src/toggle-dock-demo/scripts/build-app.sh
+open "outputs/UniversalDockToggle-v1.6.app"
+```
 
-## 交付物
+首次运行后，打开“系统设置 → 隐私与安全性 → 辅助功能”，添加并启用 `UniversalDockToggle-v1.6.app`，然后重新启动应用。
 
-- `outputs/Wins主要功能复刻可行性评估.md`
+## 注意事项
 
-## 当前状态
+- 通过 macOS 辅助功能 API 控制窗口，不修改目标应用代码。
+- 重建或更换签名后，可能需要重新授予辅助功能权限。
+- 当前为本地 ad-hoc 签名版本，仅适合个人测试；对外分发需要 Developer ID 签名和 Apple 公证。
+- 个别应用或特殊窗口可能不提供可操作的辅助功能接口。
 
-已完成当前阶段：静态评估与“窗口显示／最小化”公开 API PoC 已交付。v1.5 作为后台控制器运行，可在不修改目标应用代码的前提下识别 Dock 图标；普通应用首次点击呼出并置前、再次点击最小化，且不会被 Dock 默认行为立即唤回。Finder 支持多窗口规则：前台时一次最小化全部普通 Finder 窗口，随后逐次恢复第一个窗口并再次最小化。用户已完成真机验证。未启动、调试或提取原应用内容。
+## 目录
 
-## 关键决策与链接
+- `src/toggle-dock-demo/Sources/ToggleDockDemo/main.swift`：主程序
+- `src/toggle-dock-demo/scripts/build-app.sh`：构建脚本
+- `docs/ToggleDockDemo说明.md`：详细说明
 
-- 项目目录已创建、主要交付物已更新并通过飞书「项目目录」同步与核验。
-- PoC 源码：`src/toggle-dock-demo/`；当前版本为 v1.6。
-- PoC 使用说明：`docs/ToggleDockDemo说明.md`。
-- 本地构建产物不纳入仓库；正式分发仍需 Developer ID 签名和 Apple 公证。
+本项目目前用于个人学习和测试，尚未附带开源许可证。
 
