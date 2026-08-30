@@ -26,6 +26,8 @@ if [[ -e "$install_dir" ]]; then
   rm -rf "$install_dir"
 fi
 ditto "$app_dir" "$install_dir"
+xattr -cr "$install_dir"
+codesign --force --deep --sign - "$install_dir"
 print "Built and installed: $install_dir"
 open "$install_dir"
 
