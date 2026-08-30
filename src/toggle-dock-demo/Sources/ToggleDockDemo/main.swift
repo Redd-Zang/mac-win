@@ -51,6 +51,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsController.show()
     }
 
+    @objc private func restart() {
+        do {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-n", Bundle.main.bundleURL.path]
+            try process.run()
+            NSApp.terminate(nil)
+        } catch {
+            NSAlert(error: error).runModal()
+        }
+    }
+
     private func configureStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         guard let button = statusItem.button else { return }
@@ -61,6 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "MacWin 正在运行", action: nil, keyEquivalent: "")
         menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",")
         menu.addItem(.separator())
+        menu.addItem(withTitle: "重启 MacWin", action: #selector(restart), keyEquivalent: "r")
         menu.addItem(withTitle: "退出", action: #selector(quit), keyEquivalent: "q")
         statusItem.menu = menu
     }
@@ -95,11 +108,10 @@ private final class SettingsWindowController: NSObject {
         let permissionTitle = NSTextField(labelWithString: "系统权限")
         permissionTitle.font = .systemFont(ofSize: 17, weight: .semibold)
         let permissionButton = NSButton(title: "打开辅助功能设置", target: self, action: #selector(openAccessibilitySettings))
-        let restartButton = NSButton(title: "重启 MacWin", target: self, action: #selector(restartAfterAuthorization))
         authorizationStatus.textColor = .secondaryLabelColor
         let hint = NSTextField(wrappingLabelWithString: "窗口模式和开机启动设置会立即保存。")
         hint.textColor = .tertiaryLabelColor
-        let stack = NSStackView(views: [title, modeControl, description, permissionTitle, authorizationStatus, permissionButton, restartButton, launchAtLogin, hint])
+        let stack = NSStackView(views: [title, modeControl, description, permissionTitle, authorizationStatus, permissionButton, launchAtLogin, hint])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 16
@@ -129,18 +141,6 @@ private final class SettingsWindowController: NSObject {
     @objc private func openAccessibilitySettings() {
         onOpenAccessibilitySettings()
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
-    }
-
-    @objc private func restartAfterAuthorization() {
-        do {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-n", Bundle.main.bundleURL.path]
-            try process.run()
-            NSApp.terminate(nil)
-        } catch {
-            NSAlert(error: error).runModal()
-        }
     }
 
     @objc private func launchAtLoginChanged() {
