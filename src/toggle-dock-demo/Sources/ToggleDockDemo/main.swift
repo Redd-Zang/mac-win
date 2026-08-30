@@ -25,6 +25,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         configureStatusItem()
+        if !AXIsProcessTrusted() {
+            let alert = NSAlert()
+            alert.messageText = "MacWin 需要辅助功能权限"
+            alert.informativeText = "请在系统设置的“隐私与安全性 → 辅助功能”中启用 MacWin，启用后重新打开应用。"
+            alert.addButton(withTitle: "打开系统设置")
+            alert.addButton(withTitle: "稍后设置")
+            if alert.runModal() == .alertFirstButtonReturn {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+            }
+        }
         dockClickTracker.start()
     }
 
@@ -44,10 +54,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         guard let button = statusItem.button else { return }
         button.image = NSImage(systemSymbolName: "rectangle.on.rectangle", accessibilityDescription: "全局窗口控制器")
-        button.toolTip = "Universal Dock Toggle：\(WindowToggleMode.selected.title)"
+        button.toolTip = "MacWin：\(WindowToggleMode.selected.title)"
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "Universal Dock Toggle 正在运行", action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: "MacWin 正在运行", action: nil, keyEquivalent: "")
         menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",")
         menu.addItem(.separator())
         menu.addItem(withTitle: "退出", action: #selector(quit), keyEquivalent: "q")
@@ -66,7 +76,7 @@ private final class SettingsWindowController: NSObject {
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 235), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         modeControl = NSSegmentedControl(labels: ["全部窗口", "当前窗口"], trackingMode: .selectOne, target: nil, action: nil)
         super.init()
-        window.title = "Universal Dock Toggle 设置"
+        window.title = "MacWin 设置"
         window.isReleasedWhenClosed = false
         modeControl.target = self
         modeControl.action = #selector(modeChanged)
