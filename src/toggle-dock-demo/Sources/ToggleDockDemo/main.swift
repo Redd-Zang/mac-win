@@ -16,30 +16,23 @@ private enum WindowToggleMode: String {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var awaitingAccessibilityAuthorization = false
-    private var authorizationWatcher: Timer?
     private lazy var dockClickTracker = DockClickTracker { application, wasFrontmost in
         ManagedWindows.toggle(application, wasFrontmost: wasFrontmost, mode: .selected)
     }
     private lazy var settingsController = SettingsWindowController { mode in
         UserDefaults.standard.set(mode.rawValue, forKey: "windowToggleMode")
         self.statusItem.button?.toolTip = "MacWin：\(mode.title)"
-    } onOpenAccessibilitySettings: {
-        self.awaitingAccessibilityAuthorization = true
-        self.startAuthorizationWatcher()
-    }
+    } onOpenAccessibilitySettings: {}
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         configureStatusItem()
         if !AXIsProcessTrusted() {
             let alert = NSAlert()
             alert.messageText = "MacWin 需要辅助功能权限"
-            alert.informativeText = "请在系统设置的“隐私与安全性 → 辅助功能”中启用 MacWin，启用后重新打开应用。"
-            alert.addButton(withTitle: "打开系统设置")
+            alert.informativeText = "请在系统设置的“隐私与安全性 → 辅助功能”中启用 MacWin。授权完成后，请退出并重新打开 MacWin，Dock 点击功能才会生效。"
+            alert.addButton(withTitle: "前往授权")
             alert.addButton(withTitle: "稍后设置")
             if alert.runModal() == .alertFirstButtonReturn {
-                awaitingAccessibilityAuthorization = true
-                startAuthorizationWatcher()
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
             }
         }
@@ -50,42 +43,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dockClickTracker.stop()
     }
 
-    private func startAuthorizationWatcher() {
-        authorizationWatcher?.invalidate()
-        authorizationWatcher = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self, self.awaitingAccessibilityAuthorization, AXIsProcessTrusted() else { return }
-                self.authorizationWatcher?.invalidate()
-                self.authorizationWatcher = nil
-                self.showAuthorizationCompletedAlert()
-            }
-        }
-    }
-
-    private func showAuthorizationCompletedAlert() {
-        awaitingAccessibilityAuthorization = false
-        NSApp.activate(ignoringOtherApps: true)
-        let alert = NSAlert()
-        alert.messageText = "辅助功能授权已完成"
-        alert.informativeText = "MacWin 需要重启后才能开始监听 Dock 点击。"
-        alert.addButton(withTitle: "立即重启")
-        alert.addButton(withTitle: "稍后手动重启")
-        if alert.runModal() == .alertFirstButtonReturn {
-            restart()
-        }
-    }
-
     @objc private func quit() {
         NSApp.terminate(nil)
     }
 
     @objc private func showSettings() {
         settingsController.show()
-    }
-
-    private func restart() {
-        NSWorkspace.shared.open(Bundle.main.bundleURL)
-        NSApp.terminate(nil)
     }
 
     private func configureStatusItem() {
