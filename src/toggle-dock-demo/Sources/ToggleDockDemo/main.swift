@@ -140,8 +140,15 @@ private final class SettingsWindowController: NSObject {
             alert.runModal()
             return
         }
-        NSWorkspace.shared.open(Bundle.main.bundleURL)
-        NSApp.terminate(nil)
+        do {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-n", Bundle.main.bundleURL.path]
+            try process.run()
+            NSApp.terminate(nil)
+        } catch {
+            NSAlert(error: error).runModal()
+        }
     }
 
     @objc private func launchAtLoginChanged() {
