@@ -95,7 +95,7 @@ private final class SettingsWindowController: NSObject {
         let permissionTitle = NSTextField(labelWithString: "系统权限")
         permissionTitle.font = .systemFont(ofSize: 17, weight: .semibold)
         let permissionButton = NSButton(title: "打开辅助功能设置", target: self, action: #selector(openAccessibilitySettings))
-        let restartButton = NSButton(title: "授权完成后重启 MacWin", target: self, action: #selector(restartAfterAuthorization))
+        let restartButton = NSButton(title: "重启 MacWin", target: self, action: #selector(restartAfterAuthorization))
         authorizationStatus.textColor = .secondaryLabelColor
         let hint = NSTextField(wrappingLabelWithString: "窗口模式和开机启动设置会立即保存。")
         hint.textColor = .tertiaryLabelColor
@@ -132,14 +132,6 @@ private final class SettingsWindowController: NSObject {
     }
 
     @objc private func restartAfterAuthorization() {
-        guard AXIsProcessTrusted() else {
-            let alert = NSAlert()
-            alert.messageText = "尚未获得辅助功能权限"
-            alert.informativeText = "请先在系统设置中启用 MacWin，然后再回来重启。"
-            alert.addButton(withTitle: "好")
-            alert.runModal()
-            return
-        }
         do {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
