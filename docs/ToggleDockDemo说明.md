@@ -1,4 +1,4 @@
-# Universal Dock Toggle v1.6
+# MacWin
 
 ## 已实现
 
@@ -12,9 +12,9 @@
 
 ## 启用 Dock 单击
 
-1. 运行构建脚本生成并启动 `UniversalDockToggle-v1.6.app`。
+1. 运行构建脚本，自动安装并启动 `/Applications/MacWin.app`。
 2. 前往“系统设置 > 隐私与安全性 > 辅助功能”。
-3. 点击“+”，选择 `UniversalDockToggle-v1.6.app`，再打开其开关。
+3. 点击“+”，选择 `MacWin.app`，再打开其开关。
 4. 重新启动控制器；菜单栏会显示其状态图标。现在可以直接点击任一应用的 Dock 图标进行测试。
 
 ## 运行方式
@@ -23,7 +23,6 @@
 
 ```zsh
 ./src/toggle-dock-demo/scripts/build-app.sh
-open "outputs/UniversalDockToggle-v1.6.app"
 ```
 
 ## 已知平台边界
