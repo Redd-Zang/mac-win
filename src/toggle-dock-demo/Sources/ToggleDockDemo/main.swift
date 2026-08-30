@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import ServiceManagement
 
 private enum WindowToggleMode: String {
     case allWindows
@@ -20,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     private lazy var settingsController = SettingsWindowController { mode in
         UserDefaults.standard.set(mode.rawValue, forKey: "windowToggleMode")
-        self.statusItem.button?.toolTip = "Universal Dock Toggle：\(mode.title)"
+        self.statusItem.button?.toolTip = "MacWin：\(mode.title)"
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -69,25 +70,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 private final class SettingsWindowController: NSObject {
     private let window: NSWindow
     private let modeControl: NSSegmentedControl
+    private let authorizationStatus = NSTextField(labelWithString: "")
+    private let launchAtLogin = NSButton(checkboxWithTitle: "登录时自动启动 MacWin", target: nil, action: nil)
     private let onModeChange: (WindowToggleMode) -> Void
 
     init(onModeChange: @escaping (WindowToggleMode) -> Void) {
         self.onModeChange = onModeChange
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 235), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 390), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         modeControl = NSSegmentedControl(labels: ["全部窗口", "当前窗口"], trackingMode: .selectOne, target: nil, action: nil)
         super.init()
         window.title = "MacWin 设置"
         window.isReleasedWhenClosed = false
         modeControl.target = self
         modeControl.action = #selector(modeChanged)
+        launchAtLogin.target = self
+        launchAtLogin.action = #selector(launchAtLoginChanged)
 
         let title = NSTextField(labelWithString: "窗口切换方式")
         title.font = .systemFont(ofSize: 20, weight: .semibold)
         let description = NSTextField(wrappingLabelWithString: "全部窗口：呼出或最小化该应用的全部可访问窗口。\n当前窗口：只操作该应用当前正在使用的窗口。")
         description.textColor = .secondaryLabelColor
-        let hint = NSTextField(wrappingLabelWithString: "选择会立即保存。")
+        let permissionTitle = NSTextField(labelWithString: "系统权限")
+        permissionTitle.font = .systemFont(ofSize: 17, weight: .semibold)
+        let permissionButton = NSButton(title: "打开辅助功能设置", target: self, action: #selector(openAccessibilitySettings))
+        authorizationStatus.textColor = .secondaryLabelColor
+        let hint = NSTextField(wrappingLabelWithString: "窗口模式和开机启动设置会立即保存。")
         hint.textColor = .tertiaryLabelColor
-        let stack = NSStackView(views: [title, modeControl, description, hint])
+        let stack = NSStackView(views: [title, modeControl, description, permissionTitle, authorizationStatus, permissionButton, launchAtLogin, hint])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 16
@@ -104,12 +113,32 @@ private final class SettingsWindowController: NSObject {
 
     func show() {
         modeControl.selectedSegment = WindowToggleMode.selected == .allWindows ? 0 : 1
+        authorizationStatus.stringValue = AXIsProcessTrusted() ? "辅助功能权限：已授权" : "辅助功能权限：未授权，请开启后重新打开 MacWin。"
+        launchAtLogin.state = SMAppService.mainApp.status == .enabled ? .on : .off
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func modeChanged() {
         onModeChange(modeControl.selectedSegment == 1 ? .currentWindow : .allWindows)
+    }
+
+    @objc private func openAccessibilitySettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+    }
+
+    @objc private func launchAtLoginChanged() {
+        do {
+            if launchAtLogin.state == .on {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            launchAtLogin.state = SMAppService.mainApp.status == .enabled ? .on : .off
+            let alert = NSAlert(error: error)
+            alert.runModal()
+        }
     }
 }
 
