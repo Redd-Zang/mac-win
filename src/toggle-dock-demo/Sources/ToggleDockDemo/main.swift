@@ -25,6 +25,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     } onOpenAccessibilitySettings: {}
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if !CommandLine.arguments.contains("--restarted"),
+           let bundleIdentifier = Bundle.main.bundleIdentifier,
+           NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier).count > 1 {
+            NSApp.terminate(nil)
+            return
+        }
         configureStatusItem()
         if !AXIsProcessTrusted() {
             let alert = NSAlert()
@@ -55,7 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-n", Bundle.main.bundleURL.path]
+            process.arguments = ["-n", Bundle.main.bundleURL.path, "--args", "--restarted"]
             try process.run()
             NSApp.terminate(nil)
         } catch {
