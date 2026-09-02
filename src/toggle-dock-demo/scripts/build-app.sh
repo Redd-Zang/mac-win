@@ -31,4 +31,3 @@ xattr -cr "$install_dir"
 codesign --force --deep --sign - "$install_dir"
 print "Built and installed: $install_dir"
 open "$install_dir"
-

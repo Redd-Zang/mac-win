@@ -11,4 +11,3 @@ let package = Package(
         .executableTarget(name: "ToggleDockDemo")
     ]
 )
-
